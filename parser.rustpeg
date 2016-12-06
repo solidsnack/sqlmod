@@ -1,0 +1,32 @@
+use lines::*;
+
+
+#[pub]
+lines = inline ** br
+
+inline -> Line
+    = declaration / broken_declaration / comment / empty / any
+
+declaration -> Line
+    = "--@" " "+ name:name ro:(" "+ "ro")?
+      { Declaration((start_pos, pos), name, ro.is_some()) }
+
+broken_declaration -> Line
+    = "--@" [^\r\n]* { BrokenDeclaration(start_pos, pos) }
+
+comment -> Line
+    = "--" [^\r\n]* { Comment(start_pos, pos) }
+
+empty -> Line
+    = [ \t]* { Empty(start_pos, pos) }
+
+any -> Line
+    = [^\r\n]+ { Text(start_pos, pos) }
+
+
+/// Matches simple names.
+name -> (usize, usize)
+    = [a-z] [a-zA-Z0-9_]* { (start_pos, pos) }
+
+
+br = "\r\n" / "\n"
