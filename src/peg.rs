@@ -115,7 +115,7 @@ impl <'input> ParseState<'input> {
     }
 }
 fn parse_lines<'input>(input: &'input str, state: &mut ParseState<'input>,
-                       pos: usize) -> RuleResult<()> {
+                       pos: usize) -> RuleResult<Vec<Line>> {
     {
         let mut repeat_pos = pos;
         let mut repeat_value = vec!();
@@ -138,7 +138,7 @@ fn parse_lines<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Failed => { break ; }
             }
         }
-        Matched(repeat_pos, ())
+        Matched(repeat_pos, repeat_value)
     }
 }
 fn parse_inline<'input>(input: &'input str, state: &mut ParseState<'input>,
@@ -155,15 +155,7 @@ fn parse_inline<'input>(input: &'input str, state: &mut ParseState<'input>,
                         let choice_res = parse_comment(input, state, pos);
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
-                            Failed => {
-                                let choice_res =
-                                    parse_empty(input, state, pos);
-                                match choice_res {
-                                    Matched(pos, value) =>
-                                    Matched(pos, value),
-                                    Failed => parse_any(input, state, pos),
-                                }
-                            }
+                            Failed => parse_something(input, state, pos),
                         }
                     }
                 }
@@ -416,52 +408,14 @@ fn parse_comment<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
-fn parse_empty<'input>(input: &'input str, state: &mut ParseState<'input>,
-                       pos: usize) -> RuleResult<Line> {
+fn parse_something<'input>(input: &'input str, state: &mut ParseState<'input>,
+                           pos: usize) -> RuleResult<Line> {
     {
         let start_pos = pos;
         {
             let seq_res =
                 {
                     let mut repeat_pos = pos;
-                    loop  {
-                        let pos = repeat_pos;
-                        let step_res =
-                            if input.len() > pos {
-                                let (ch, next) = char_range_at(input, pos);
-                                match ch {
-                                    ' ' | '\t' => Matched(next, ()),
-                                    _ => state.mark_failure(pos, "[ \t]"),
-                                }
-                            } else { state.mark_failure(pos, "[ \t]") };
-                        match step_res {
-                            Matched(newpos, value) => { repeat_pos = newpos; }
-                            Failed => { break ; }
-                        }
-                    }
-                    Matched(repeat_pos, ())
-                };
-            match seq_res {
-                Matched(pos, _) => {
-                    {
-                        let match_str = &input[start_pos..pos];
-                        Matched(pos, { Empty(start_pos, pos) })
-                    }
-                }
-                Failed => Failed,
-            }
-        }
-    }
-}
-fn parse_any<'input>(input: &'input str, state: &mut ParseState<'input>,
-                     pos: usize) -> RuleResult<Line> {
-    {
-        let start_pos = pos;
-        {
-            let seq_res =
-                {
-                    let mut repeat_pos = pos;
-                    let mut repeat_value = vec!();
                     loop  {
                         let pos = repeat_pos;
                         let step_res =
@@ -474,16 +428,11 @@ fn parse_any<'input>(input: &'input str, state: &mut ParseState<'input>,
                                 }
                             } else { state.mark_failure(pos, "[^\r\n]") };
                         match step_res {
-                            Matched(newpos, value) => {
-                                repeat_pos = newpos;
-                                repeat_value.push(value);
-                            }
+                            Matched(newpos, value) => { repeat_pos = newpos; }
                             Failed => { break ; }
                         }
                     }
-                    if repeat_value.len() >= 1usize {
-                        Matched(repeat_pos, ())
-                    } else { Failed }
+                    Matched(repeat_pos, ())
                 };
             match seq_res {
                 Matched(pos, _) => {
@@ -569,7 +518,7 @@ fn parse_br<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
-pub fn lines<'input>(input: &'input str) -> ParseResult<()> {
+pub fn lines<'input>(input: &'input str) -> ParseResult<Vec<Line>> {
     let mut state = ParseState::new();
     match parse_lines(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }

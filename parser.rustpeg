@@ -2,10 +2,11 @@ use lines::*;
 
 
 #[pub]
-lines = inline ** br
+lines -> Vec<Line>
+    = inline ** br
 
 inline -> Line
-    = declaration / broken_declaration / comment / empty / any
+    = declaration / broken_declaration / comment / something
 
 declaration -> Line
     = "--@" " "+ name:name ro:(" "+ "ro")?
@@ -17,11 +18,8 @@ broken_declaration -> Line
 comment -> Line
     = "--" [^\r\n]* { Comment(start_pos, pos) }
 
-empty -> Line
-    = [ \t]* { Empty(start_pos, pos) }
-
-any -> Line
-    = [^\r\n]+ { Text(start_pos, pos) }
+something -> Line
+    = [^\r\n]* { Text(start_pos, pos) }
 
 
 /// Matches simple names.
