@@ -1,2 +1,0 @@
---@ now
-SELECT now();

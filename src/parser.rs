@@ -47,16 +47,22 @@ impl<'a> Parse for &'a str {
         let mut warnings = Vec::default();
         let mut lineno = 0;
         let mut within: Option<((usize, usize), (usize, usize), bool)> = None;
-        let mut z = 0;             // Byte offset of end of last line processed
+        let mut end = 0;             // Byte offset: end-of-declaration-pointer
+
+
 
         for line in peg::lines(&text)? {
             lineno += 1;
-            let end = line.end().clone();
-            match line {
+            end = match line {
+                Declaration(_, _, _) => line.end().clone(),
+                Text(_, _) => line.end().clone(),
+                _ => end,
+            };
+            match line {          // Consume declaration information if present
                 Declaration(position, name, ro) => {
-                    if let Some(item) = within {
-                        let a = (item.0).0;
-                        queries.push(query(text, (a, z), item.1, item.2));
+                    if let Some(dec) = within {
+                        let start = (dec.0).0;
+                        queries.push(query(text, (start, end), dec.1, dec.2));
                     }
                     within = Some((position, name, ro));
                 }
@@ -65,11 +71,13 @@ impl<'a> Parse for &'a str {
                 }
                 _ => {}
             }
-            z = end;
+
         }
-        if let Some(item) = within {
-            let a = (item.0).0;
-            queries.push(query(text, (a, z), item.1, item.2));
+
+        // Handle last declaration.
+        if let Some(dec) = within {
+            let start = (dec.0).0;
+            queries.push(query(text, (start, end), dec.1, dec.2));
         }
 
         Ok(Queries {

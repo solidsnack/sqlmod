@@ -20,4 +20,3 @@ pub struct Query {
     pub name: String,
     pub ro: bool,
 }
-
