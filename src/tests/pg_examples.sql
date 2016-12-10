@@ -6,7 +6,7 @@
 SELECT now()
 
 --@ maybe_create_user
---- Uses anonymous PL/pgSQL to redundant user creation.
+--- Uses anonymous PL/pgSQL to handle potentially redundant user creation.
 DO $$
 DECLARE
   sql_state text;
@@ -30,3 +30,15 @@ SELECT :t::timestamptz AS t;
 --@ as_interval ro
 --- Requests database interprets time interval.
 SELECT :i::interval AS i;
+
+
+--- Temporary tables.
+
+--@ load_archive
+
+CREATE TABLE tmp (LIKE original);
+
+COPY tmp FROM '/tmp/original.tsv';
+
+INSERT INTO original SELECT * FROM tmp
+ON CONFLICT DO NOTHING;

@@ -1,32 +1,49 @@
 #[derive(Debug)]
-pub enum Line {
-    Declaration((usize, usize), (usize, usize), bool),
-    BrokenDeclaration(usize, usize),
-    Comment(usize, usize),
-    Empty(usize, usize),
-    Text(usize, usize),
+pub enum Line<'input> {
+    Declaration(Section<'input>, Signature),
+    BrokenDeclaration(Section<'input>),
+    Comment(Section<'input>),
+    Empty(Section<'input>),
+    Text(Section<'input>),
 }
 
 pub use self::Line::*;
 
-impl Line {
-    pub fn start(&self) -> &usize {
+impl<'input> Line<'input> {
+    pub fn section(&'input self) -> &'input Section<'input> {
         match *self {
-            Declaration((ref start, _), _, _) => start,
-            BrokenDeclaration(ref start, _) => start,
-            Comment(ref start, _) => start,
-            Empty(ref start, _) => start,
-            Text(ref start, _) => start,
+            Declaration(ref m, _) => m,
+            BrokenDeclaration(ref m) => m,
+            Comment(ref m) => m,
+            Empty(ref m) => m,
+            Text(ref m) => m,
         }
     }
 
-    pub fn end(&self) -> &usize {
-        match *self {
-            Declaration((_, ref end), _, _) => end,
-            BrokenDeclaration(_, ref end) => end,
-            Comment(_, ref end) => end,
-            Empty(_, ref end) => end,
-            Text(_, ref end) => end,
-        }
-    }
+    pub fn start(&self) -> usize { self.section().start() }
+
+    pub fn end(&self) -> usize { self.section().end() }
+
+    pub fn text(&self) -> &str { self.section().s() }
+
+    pub fn blank(&self) -> bool { self.section().s().trim().len() == 0 }
+}
+
+
+#[derive(Debug)]
+pub struct Section<'input>(pub usize, pub usize, pub &'input str);
+
+impl<'input> Section<'input> {
+    pub fn start(&self) -> usize { self.0.clone() }
+
+    pub fn end(&self) -> usize { self.1.clone() }
+
+    pub fn s(&self) -> &'input str { self.2 }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct Signature {
+    pub name: String,
+    pub ro: bool,
 }

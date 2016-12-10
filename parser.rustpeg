@@ -2,29 +2,30 @@ use lines::*;
 
 
 #[pub]
-lines -> Vec<Line>
+lines -> Vec<Line<'input>>
     = inline ** br
 
-inline -> Line
+inline -> Line<'input>
     = declaration / broken_declaration / comment / something
 
-declaration -> Line
+declaration -> Line<'input>
     = "--@" " "+ name:name ro:(" "+ "ro")?
-      { Declaration((start_pos, pos), name, ro.is_some()) }
+      { Declaration(Section(start_pos, pos, match_str),
+                    Signature { name: name.into(), ro: ro.is_some() }) }
 
-broken_declaration -> Line
-    = "--@" [^\r\n]* { BrokenDeclaration(start_pos, pos) }
+broken_declaration -> Line<'input>
+    = "--@" [^\r\n]* { BrokenDeclaration(Section(start_pos, pos, match_str)) }
 
-comment -> Line
-    = "--" [^\r\n]* { Comment(start_pos, pos) }
+comment -> Line<'input>
+    = "--" [^\r\n]* { Comment(Section(start_pos, pos, match_str)) }
 
-something -> Line
-    = [^\r\n]* { Text(start_pos, pos) }
+something -> Line<'input>
+    = [^\r\n]* { Text(Section(start_pos, pos, match_str)) }
 
 
-/// Matches simple names.
-name -> (usize, usize)
-    = [a-z] [a-zA-Z0-9_]* { (start_pos, pos) }
+/// Sectiones simple names.
+name -> &'input str
+    = [a-z] [a-zA-Z0-9_]* { match_str }
 
 
 br = "\r\n" / "\n"

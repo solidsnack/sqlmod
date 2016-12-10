@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::iter::FromIterator;
 use std::io::Read;
 
@@ -46,46 +46,57 @@ impl<'a> Parse for &'a str {
         let mut queries = Vec::default();
         let mut warnings = Vec::default();
         let mut lineno = 0;
-        let mut within: Option<((usize, usize), (usize, usize), bool)> = None;
+        let mut within: Option<(usize, Signature)> = None;
+        let mut start = 0;         // Byte offset: begin-of-declaration-pointer
         let mut end = 0;             // Byte offset: end-of-declaration-pointer
-
-
 
         for line in peg::lines(&text)? {
             lineno += 1;
-            end = match line {
-                Declaration(_, _, _) => line.end().clone(),
-                Text(_, _) => line.end().clone(),
-                _ => end,
-            };
             match line {          // Consume declaration information if present
-                Declaration(position, name, ro) => {
-                    if let Some(dec) = within {
-                        let start = (dec.0).0;
-                        queries.push(query(text, (start, end), dec.1, dec.2));
+                Declaration(_, ref signature) => {
+                    if let Some((i, sig)) = within {
+                        if start > 0 {
+                            queries.push(query(text, i, sig, (start, end)));
+                        }
                     }
-                    within = Some((position, name, ro));
+                    start = 0;
+                    within = Some((line.start(), signature.clone()));
                 }
-                BrokenDeclaration(_, _) => {
-                    warnings.push((lineno, line));
+                BrokenDeclaration(_) => {
+                    warnings.push((lineno, line.text().into()));
                 }
                 _ => {}
             }
-
+            if start == 0 {
+                start = match line {
+                    Text(_) if !line.blank() => line.start(),
+                    Comment(_) => line.start(),
+                    _ => start,
+                };
+            }
+            end = match line {
+                Declaration(_, _) => line.end(),
+                Text(_) if !line.blank() => line.end(),
+                _ => end,
+            };
         }
 
         // Handle last declaration.
-        if let Some(dec) = within {
-            let start = (dec.0).0;
-            queries.push(query(text, (start, end), dec.1, dec.2));
+        if let Some((i, sig)) = within {
+            if start > 0 {
+                queries.push(query(text, i, sig, (start, end)));
+            }
         }
 
         Ok(Queries {
             text: text.into(),
             info: "".into(),
-            warnings: HashMap::from_iter(warnings.into_iter()),
-            queries: HashMap::from_iter(queries.into_iter()
-                                               .map(|q| (q.name.clone(), q))),
+            warnings: BTreeMap::from_iter(warnings.into_iter()),
+            queries: BTreeMap::from_iter(queries.into_iter()
+                                                .map(|q| {
+                                                    (q.signature.name.clone(),
+                                                     q)
+                                                })),
         })
     }
 }
@@ -99,15 +110,13 @@ fn read<R: Read>(source: &mut R) -> Result<String> {
 
 
 fn query(text: &str,
-         body: (usize, usize),
-         name: (usize, usize),
-         ro: bool)
+         begin: usize,
+         signature: Signature,
+         body: (usize, usize))
          -> Query {
-    let ref full = text[body.0..body.1];
     Query {
-        name: text[name.0..name.1].trim().into(),
-        text: full.splitn(2, '\n').last().unwrap().trim_right().into(),
-        full: full.into(),
-        ro: ro,
+        signature: signature,
+        text: text[body.0..body.1].trim_right().into(),
+        full: text[begin..body.1].into(),
     }
 }

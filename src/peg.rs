@@ -115,7 +115,7 @@ impl <'input> ParseState<'input> {
     }
 }
 fn parse_lines<'input>(input: &'input str, state: &mut ParseState<'input>,
-                       pos: usize) -> RuleResult<Vec<Line>> {
+                       pos: usize) -> RuleResult<Vec<Line<'input>>> {
     {
         let mut repeat_pos = pos;
         let mut repeat_value = vec!();
@@ -142,7 +142,7 @@ fn parse_lines<'input>(input: &'input str, state: &mut ParseState<'input>,
     }
 }
 fn parse_inline<'input>(input: &'input str, state: &mut ParseState<'input>,
-                        pos: usize) -> RuleResult<Line> {
+                        pos: usize) -> RuleResult<Line<'input>> {
     {
         let choice_res = parse_declaration(input, state, pos);
         match choice_res {
@@ -165,7 +165,7 @@ fn parse_inline<'input>(input: &'input str, state: &mut ParseState<'input>,
 }
 fn parse_declaration<'input>(input: &'input str,
                              state: &mut ParseState<'input>, pos: usize)
- -> RuleResult<Line> {
+ -> RuleResult<Line<'input>> {
     {
         let start_pos = pos;
         {
@@ -275,10 +275,13 @@ fn parse_declaration<'input>(input: &'input str,
                                                                 &input[start_pos..pos];
                                                             Matched(pos,
                                                                     {
-                                                                        Declaration((start_pos,
-                                                                                     pos),
-                                                                                    name,
-                                                                                    ro.is_some())
+                                                                        Declaration(Section(start_pos,
+                                                                                            pos,
+                                                                                            match_str),
+                                                                                    Signature{name:
+                                                                                                  name.into(),
+                                                                                              ro:
+                                                                                                  ro.is_some(),})
                                                                     })
                                                         }
                                                     }
@@ -301,7 +304,7 @@ fn parse_declaration<'input>(input: &'input str,
 }
 fn parse_broken_declaration<'input>(input: &'input str,
                                     state: &mut ParseState<'input>,
-                                    pos: usize) -> RuleResult<Line> {
+                                    pos: usize) -> RuleResult<Line<'input>> {
     {
         let start_pos = pos;
         {
@@ -342,8 +345,9 @@ fn parse_broken_declaration<'input>(input: &'input str,
                                     let match_str = &input[start_pos..pos];
                                     Matched(pos,
                                             {
-                                                BrokenDeclaration(start_pos,
-                                                                  pos)
+                                                BrokenDeclaration(Section(start_pos,
+                                                                          pos,
+                                                                          match_str))
                                             })
                                 }
                             }
@@ -357,7 +361,7 @@ fn parse_broken_declaration<'input>(input: &'input str,
     }
 }
 fn parse_comment<'input>(input: &'input str, state: &mut ParseState<'input>,
-                         pos: usize) -> RuleResult<Line> {
+                         pos: usize) -> RuleResult<Line<'input>> {
     {
         let start_pos = pos;
         {
@@ -396,7 +400,12 @@ fn parse_comment<'input>(input: &'input str, state: &mut ParseState<'input>,
                             Matched(pos, _) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos, { Comment(start_pos, pos) })
+                                    Matched(pos,
+                                            {
+                                                Comment(Section(start_pos,
+                                                                pos,
+                                                                match_str))
+                                            })
                                 }
                             }
                             Failed => Failed,
@@ -409,7 +418,7 @@ fn parse_comment<'input>(input: &'input str, state: &mut ParseState<'input>,
     }
 }
 fn parse_something<'input>(input: &'input str, state: &mut ParseState<'input>,
-                           pos: usize) -> RuleResult<Line> {
+                           pos: usize) -> RuleResult<Line<'input>> {
     {
         let start_pos = pos;
         {
@@ -438,7 +447,8 @@ fn parse_something<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Matched(pos, _) => {
                     {
                         let match_str = &input[start_pos..pos];
-                        Matched(pos, { Text(start_pos, pos) })
+                        Matched(pos,
+                                { Text(Section(start_pos, pos, match_str)) })
                     }
                 }
                 Failed => Failed,
@@ -447,7 +457,7 @@ fn parse_something<'input>(input: &'input str, state: &mut ParseState<'input>,
     }
 }
 fn parse_name<'input>(input: &'input str, state: &mut ParseState<'input>,
-                      pos: usize) -> RuleResult<(usize, usize)> {
+                      pos: usize) -> RuleResult<&'input str> {
     {
         let start_pos = pos;
         {
@@ -496,7 +506,7 @@ fn parse_name<'input>(input: &'input str, state: &mut ParseState<'input>,
                             Matched(pos, _) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos, { (start_pos, pos) })
+                                    Matched(pos, { match_str })
                                 }
                             }
                             Failed => Failed,
@@ -518,7 +528,7 @@ fn parse_br<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
-pub fn lines<'input>(input: &'input str) -> ParseResult<Vec<Line>> {
+pub fn lines<'input>(input: &'input str) -> ParseResult<Vec<Line<'input>>> {
     let mut state = ParseState::new();
     match parse_lines(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
