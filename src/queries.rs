@@ -16,13 +16,14 @@ pub struct Queries {
 #[derive(Debug)]
 pub struct Query {
     pub signature: Signature,
-    pub full: String,
+    pub original: String,
     pub text: String,
+    pub line: usize,
 }
 
 impl Query {
     pub fn render(&self) -> String {
-        if self.ro() {
+        if self.readonly() {
             format!("--@ {} ro\n{}", self.name(), self.text)
         } else {
             format!("--@ {}\n{}", self.name(), self.text)
@@ -31,7 +32,11 @@ impl Query {
 
     pub fn name(&self) -> String { self.signature.name.clone() }
 
-    pub fn ro(&self) -> bool { self.signature.ro }
+    pub fn readonly(&self) -> bool { self.signature.ro }
+
+    pub fn original(&self) -> String { self.original.clone() }
 
     pub fn text(&self) -> String { self.text.clone() }
+
+    pub fn line(&self) -> usize { self.line.clone() }
 }

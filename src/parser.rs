@@ -46,7 +46,7 @@ impl<'a> Parse for &'a str {
         let mut queries = Vec::default();
         let mut warnings = Vec::default();
         let mut lineno = 0;
-        let mut within: Option<(usize, Signature)> = None;
+        let mut within: Option<(usize, usize, Signature)> = None;
         let mut start = 0;         // Byte offset: begin-of-declaration-pointer
         let mut end = 0;             // Byte offset: end-of-declaration-pointer
 
@@ -54,13 +54,13 @@ impl<'a> Parse for &'a str {
             lineno += 1;
             match line {          // Consume declaration information if present
                 Declaration(_, ref signature) => {
-                    if let Some((i, sig)) = within {
+                    if let Some((l, i, sig)) = within {
                         if start > 0 {
-                            queries.push(query(text, i, sig, (start, end)));
+                            queries.push(query(text, l, i, sig, (start, end)));
                         }
                     }
                     start = 0;
-                    within = Some((line.start(), signature.clone()));
+                    within = Some((lineno, line.start(), signature.clone()));
                 }
                 BrokenDeclaration(_) => {
                     warnings.push((lineno, line.text().into()));
@@ -82,9 +82,9 @@ impl<'a> Parse for &'a str {
         }
 
         // Handle last declaration.
-        if let Some((i, sig)) = within {
+        if let Some((l, i, sig)) = within {
             if start > 0 {
-                queries.push(query(text, i, sig, (start, end)));
+                queries.push(query(text, l, i, sig, (start, end)));
             }
         }
 
@@ -110,13 +110,15 @@ fn read<R: Read>(source: &mut R) -> Result<String> {
 
 
 fn query(text: &str,
+         line: usize,
          begin: usize,
          signature: Signature,
          body: (usize, usize))
          -> Query {
     Query {
         signature: signature,
+        line: line,
         text: text[body.0..body.1].trim_right().into(),
-        full: text[begin..body.1].into(),
+        original: text[begin..body.1].into(),
     }
 }
