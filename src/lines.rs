@@ -1,3 +1,6 @@
+pub use queries::*;
+
+
 #[derive(Debug)]
 pub enum Line<'input> {
     Declaration(Section<'input>, Signature),
@@ -39,11 +42,4 @@ impl<'input> Section<'input> {
     pub fn end(&self) -> usize { self.1.clone() }
 
     pub fn s(&self) -> &'input str { self.2 }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Signature {
-    pub name: String,
-    pub ro: bool,
 }

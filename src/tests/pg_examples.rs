@@ -17,11 +17,12 @@ fn it_works() {
 
     assert!(parsed.is_ok());
 
-    if let Ok(ref q) = parsed {
-        let found: HashSet<&str> =
-            q.queries.keys().map(|s| s.as_str()).collect();
-        for q in q.queries.values() {
-            println!("{:#?}", q);   // Visible with `cargo test -- --nocapture`
+    if let Ok(ref queries) = parsed {
+        let alloc: Vec<_> = queries.keys().collect();
+        let found: HashSet<&str> = alloc.iter().map(|s| s.as_str()).collect();
+        for q in queries.iter() {
+            // Visible with `cargo test -- --nocapture`.
+            println!("{:#?}\n{}", q.signature, q.format());
         }
         assert!(found == keys);
     }

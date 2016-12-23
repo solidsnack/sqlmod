@@ -9,9 +9,11 @@ inline -> Line<'input>
     = declaration / broken_declaration / comment / something
 
 declaration -> Line<'input>
-    = "--@" " "+ name:name ro:(" "+ "ro")?
+    = "--@" " "+ name:name ro:(" "+ readonly)? coarity:(" "+ coarity)?
       { Declaration(Section(start_pos, pos, match_str),
-                    Signature { name: name.into(), ro: ro.is_some() }) }
+                    Signature { name: name.into(),
+                                ro: ro.is_some(),
+                                coarity: coarity }) }
 
 broken_declaration -> Line<'input>
     = "--@" [^\r\n]* { BrokenDeclaration(Section(start_pos, pos, match_str)) }
@@ -23,9 +25,16 @@ something -> Line<'input>
     = [^\r\n]* { Text(Section(start_pos, pos, match_str)) }
 
 
-/// Sectiones simple names.
+/// Simple names.
 name -> &'input str
     = [a-z] [a-zA-Z0-9_]* { match_str }
+
+readonly -> &'input str
+    = "ro" { match_str }
+
+coarity -> CoArity
+    = ( "()" / "(?)" / "(1)" / "(*)" / "(+)" )
+      { CoArity::parse(match_str).unwrap() }
 
 
 br = "\r\n" / "\n"

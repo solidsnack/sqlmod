@@ -15,8 +15,8 @@ fn it_works() {
     ];
     for sample in samples {
         let parsed = parser::parse(&sample).unwrap();
-        assert!(parsed.queries["now"].name() == "now");
-        assert!(parsed.queries["now"].text() == QUERY);
+        assert!(parsed["now"].name() == "now");
+        assert!(parsed["now"].text() == QUERY);
     }
 }
 
@@ -34,8 +34,8 @@ fn whitespace() {
     ];
     for sample in samples {
         let parsed = parser::parse(&sample).unwrap();
-        assert!(parsed.queries["now"].name() == "now");
-        assert!(parsed.queries["now"].text() == QUERY);
+        assert!(parsed["now"].name() == "now");
+        assert!(parsed["now"].text() == QUERY);
     }
 }
 
@@ -44,8 +44,8 @@ fn whitespace() {
 fn above_comment() {
     let sample = vec![CMT, ANNO, QUERY].join("\n");
     let parsed = parser::parse(&sample).unwrap();
-    assert!(parsed.queries["now"].name() == "now");
-    assert!(parsed.queries["now"].text() == QUERY);
+    assert!(parsed["now"].name() == "now");
+    assert!(parsed["now"].text() == QUERY);
 }
 
 
@@ -60,8 +60,8 @@ fn trailing_comment() {
     ];
     for sample in samples {
         let parsed = parser::parse(&sample).unwrap();
-        assert!(parsed.queries["now"].name() == "now");
-        assert!(parsed.queries["now"].text() == QUERY);
+        assert!(parsed["now"].name() == "now");
+        assert!(parsed["now"].text() == QUERY);
     }
 }
 
@@ -70,6 +70,6 @@ fn trailing_comment() {
 fn query_comment() {
     let sample = vec![ANNO, CMT, QUERY].join("\n");
     let parsed = parser::parse(&sample).unwrap();
-    assert!(parsed.queries["now"].name() == "now");
-    assert!(parsed.queries["now"].text() == format!("{}\n{}", CMT, QUERY));
+    assert!(parsed["now"].name() == "now");
+    assert!(parsed["now"].text() == format!("{}\n{}", CMT, QUERY));
 }

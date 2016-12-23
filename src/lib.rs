@@ -5,12 +5,11 @@ extern crate libc;
 extern crate error_chain;
 
 
-pub mod c;
+// pub mod c;
 pub mod errors;
 pub mod lines;
 pub mod parser;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub mod peg;
 pub mod queries;
-mod stringmap;
 mod tests;

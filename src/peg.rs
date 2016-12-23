@@ -250,10 +250,9 @@ fn parse_declaration<'input>(input: &'input str,
                                                                   Matched(pos,
                                                                           _)
                                                                   => {
-                                                                      slice_eq(input,
-                                                                               state,
-                                                                               pos,
-                                                                               "ro")
+                                                                      parse_readonly(input,
+                                                                                     state,
+                                                                                     pos)
                                                                   }
                                                                   Failed =>
                                                                   Failed,
@@ -271,18 +270,103 @@ fn parse_declaration<'input>(input: &'input str,
                                                 match seq_res {
                                                     Matched(pos, ro) => {
                                                         {
-                                                            let match_str =
-                                                                &input[start_pos..pos];
-                                                            Matched(pos,
+                                                            let seq_res =
+                                                                match {
+                                                                          let seq_res =
+                                                                              {
+                                                                                  let mut repeat_pos =
+                                                                                      pos;
+                                                                                  let mut repeat_value =
+                                                                                      vec!();
+                                                                                  loop 
+                                                                                       {
+                                                                                      let pos =
+                                                                                          repeat_pos;
+                                                                                      let step_res =
+                                                                                          slice_eq(input,
+                                                                                                   state,
+                                                                                                   pos,
+                                                                                                   " ");
+                                                                                      match step_res
+                                                                                          {
+                                                                                          Matched(newpos,
+                                                                                                  value)
+                                                                                          =>
+                                                                                          {
+                                                                                              repeat_pos
+                                                                                                  =
+                                                                                                  newpos;
+                                                                                              repeat_value.push(value);
+                                                                                          }
+                                                                                          Failed
+                                                                                          =>
+                                                                                          {
+                                                                                              break
+                                                                                                  ;
+                                                                                          }
+                                                                                      }
+                                                                                  }
+                                                                                  if repeat_value.len()
+                                                                                         >=
+                                                                                         1usize
+                                                                                     {
+                                                                                      Matched(repeat_pos,
+                                                                                              ())
+                                                                                  } else {
+                                                                                      Failed
+                                                                                  }
+                                                                              };
+                                                                          match seq_res
+                                                                              {
+                                                                              Matched(pos,
+                                                                                      _)
+                                                                              =>
+                                                                              {
+                                                                                  parse_coarity(input,
+                                                                                                state,
+                                                                                                pos)
+                                                                              }
+                                                                              Failed
+                                                                              =>
+                                                                              Failed,
+                                                                          }
+                                                                      } {
+                                                                    Matched(newpos,
+                                                                            value)
+                                                                    => {
+                                                                        Matched(newpos,
+                                                                                Some(value))
+                                                                    }
+                                                                    Failed =>
                                                                     {
-                                                                        Declaration(Section(start_pos,
-                                                                                            pos,
-                                                                                            match_str),
-                                                                                    Signature{name:
-                                                                                                  name.into(),
-                                                                                              ro:
-                                                                                                  ro.is_some(),})
-                                                                    })
+                                                                        Matched(pos,
+                                                                                None)
+                                                                    }
+                                                                };
+                                                            match seq_res {
+                                                                Matched(pos,
+                                                                        coarity)
+                                                                => {
+                                                                    {
+                                                                        let match_str =
+                                                                            &input[start_pos..pos];
+                                                                        Matched(pos,
+                                                                                {
+                                                                                    Declaration(Section(start_pos,
+                                                                                                        pos,
+                                                                                                        match_str),
+                                                                                                Signature{name:
+                                                                                                              name.into(),
+                                                                                                          ro:
+                                                                                                              ro.is_some(),
+                                                                                                          coarity:
+                                                                                                              coarity,})
+                                                                                })
+                                                                    }
+                                                                }
+                                                                Failed =>
+                                                                Failed,
+                                                            }
                                                         }
                                                     }
                                                     Failed => Failed,
@@ -511,6 +595,75 @@ fn parse_name<'input>(input: &'input str, state: &mut ParseState<'input>,
                             }
                             Failed => Failed,
                         }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_readonly<'input>(input: &'input str, state: &mut ParseState<'input>,
+                          pos: usize) -> RuleResult<&'input str> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "ro");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { match_str })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_coarity<'input>(input: &'input str, state: &mut ParseState<'input>,
+                         pos: usize) -> RuleResult<CoArity> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res =
+                {
+                    let choice_res = slice_eq(input, state, pos, "()");
+                    match choice_res {
+                        Matched(pos, value) => Matched(pos, value),
+                        Failed => {
+                            let choice_res =
+                                slice_eq(input, state, pos, "(?)");
+                            match choice_res {
+                                Matched(pos, value) => Matched(pos, value),
+                                Failed => {
+                                    let choice_res =
+                                        slice_eq(input, state, pos, "(1)");
+                                    match choice_res {
+                                        Matched(pos, value) =>
+                                        Matched(pos, value),
+                                        Failed => {
+                                            let choice_res =
+                                                slice_eq(input, state, pos,
+                                                         "(*)");
+                                            match choice_res {
+                                                Matched(pos, value) =>
+                                                Matched(pos, value),
+                                                Failed =>
+                                                slice_eq(input, state, pos,
+                                                         "(+)"),
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { CoArity::parse(match_str).unwrap() })
                     }
                 }
                 Failed => Failed,

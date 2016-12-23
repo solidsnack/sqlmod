@@ -10,3 +10,4 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 error-chain = "*"
 libc = "*"
+stringmap = "^0"

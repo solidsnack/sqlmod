@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
-use std::iter::FromIterator;
 use std::io::Read;
 
 use errors::*;
-use lines::*;
+use lines::Line::*;
 use queries::*;
 use peg;
 
@@ -30,11 +28,10 @@ impl<'a> Parse for &'a String {
 
 impl<'a, P: Parse> Parse for (&'a str, P) {
     fn parse(source: (&'a str, P)) -> Result<Queries> {
-        let Queries { text, queries, warnings, .. } = Parse::parse(source.1)?;
+        let Queries { queries, indexes, .. } = Parse::parse(source.1)?;
         Ok(Queries {
-            info: source.0.into(),
-            text: text,
-            warnings: warnings,
+            info: Some(source.0.into()),
+            indexes: indexes,
             queries: queries,
         })
     }
@@ -44,7 +41,7 @@ impl<'a, P: Parse> Parse for (&'a str, P) {
 impl<'a> Parse for &'a str {
     fn parse(text: &'a str) -> Result<Queries> {
         let mut queries = Vec::default();
-        let mut warnings = Vec::default();
+        let mut warnings: Vec<(usize, String)> = Vec::default();
         let mut lineno = 0;
         let mut within: Option<(usize, usize, Signature)> = None;
         let mut start = 0;         // Byte offset: begin-of-declaration-pointer
@@ -54,9 +51,9 @@ impl<'a> Parse for &'a str {
             lineno += 1;
             match line {          // Consume declaration information if present
                 Declaration(_, ref signature) => {
-                    if let Some((l, i, sig)) = within {
+                    if let Some((_, _, sig)) = within {
                         if start > 0 {
-                            queries.push(query(text, l, i, sig, (start, end)));
+                            queries.push(query(text, sig, (start, end)));
                         }
                     }
                     start = 0;
@@ -82,22 +79,13 @@ impl<'a> Parse for &'a str {
         }
 
         // Handle last declaration.
-        if let Some((l, i, sig)) = within {
+        if let Some((_, _, sig)) = within {
             if start > 0 {
-                queries.push(query(text, l, i, sig, (start, end)));
+                queries.push(query(text, sig, (start, end)));
             }
         }
 
-        Ok(Queries {
-            text: text.into(),
-            info: "".into(),
-            warnings: BTreeMap::from_iter(warnings.into_iter()),
-            queries: BTreeMap::from_iter(queries.into_iter()
-                                                .map(|q| {
-                                                    (q.signature.name.clone(),
-                                                     q)
-                                                })),
-        })
+        Ok(Queries::new(queries))
     }
 }
 
@@ -109,16 +97,9 @@ fn read<R: Read>(source: &mut R) -> Result<String> {
 }
 
 
-fn query(text: &str,
-         line: usize,
-         begin: usize,
-         signature: Signature,
-         body: (usize, usize))
-         -> Query {
+fn query(text: &str, signature: Signature, body: (usize, usize)) -> Query {
     Query {
         signature: signature,
-        line: line,
         text: text[body.0..body.1].trim_right().into(),
-        original: text[begin..body.1].into(),
     }
 }
