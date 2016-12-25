@@ -1,10 +1,10 @@
 #![cfg(test)]
 
-pub mod attributes;
-pub mod long_example;
-pub mod single_query;
-
 use parser;
+
+mod attributes;
+mod long_example;
+mod single_query;
 
 
 #[test]
