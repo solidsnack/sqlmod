@@ -1,4 +1,6 @@
 use lines::*;
+use queries::*;
+use query::*;
 
 
 #[pub]
@@ -9,11 +11,8 @@ inline -> Line<'input>
     = declaration / broken_declaration / comment / something
 
 declaration -> Line<'input>
-    = "--@" " "+ name:name ro:(" "+ readonly)? coarity:(" "+ coarity)?
-      { Declaration(Section(start_pos, pos, match_str),
-                    Signature { name: name.into(),
-                                ro: ro.is_some(),
-                                coarity: coarity }) }
+    = "--@" [ \t]+ signature:signature [ \t]*
+      { Declaration(Section(start_pos, pos, match_str), signature) }
 
 broken_declaration -> Line<'input>
     = "--@" [^\r\n]* { BrokenDeclaration(Section(start_pos, pos, match_str)) }
@@ -25,16 +24,36 @@ something -> Line<'input>
     = [^\r\n]* { Text(Section(start_pos, pos, match_str)) }
 
 
+signature -> Signature
+    = name:name
+      parenthesized:parenthesized?
+      annotations:([ \t]+ inner:(annotation ++ ([ \t]+)) { inner } )?
+      { let annotations = annotations.unwrap_or(vec![]).into_iter();
+        let parenthesized = parenthesized.into_iter();
+        let combined = parenthesized.chain(annotations).map(|s| s.into());
+        Signature { name: name.into(), attributes: combined.collect() } }
+
+
 /// Simple names.
 name -> &'input str
     = [a-z] [a-zA-Z0-9_]* { match_str }
 
-readonly -> &'input str
-    = "ro" { match_str }
+/// Annotations are any trailing words or quoted groupings thereof.
+annotation -> &'input str
+    = (plain_word / plain_word balanced_parens / balanced_parens / quoted)
+      { match_str }
 
-coarity -> CoArity
-    = ( "()" / "(?)" / "(1)" / "(*)" / "(+)" )
-      { CoArity::parse(match_str).unwrap() }
+parenthesized -> &'input str
+    = balanced_parens { match_str }
+
+/// No quotes, no spaces, no parentheses.
+plain_word = [^ \t"()\r\n]+
+
+/// Spaces allowed.
+balanced_parens = "()" / "(" [^()]+ ")" / "(" ( [^()]+ / balanced_parens )+ ")"
+
+/// Double-quoted strings.
+quoted = "\"" ( "\\" "\"" / [^"] )+ "\""
 
 
 br = "\r\n" / "\n"

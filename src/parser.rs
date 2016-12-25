@@ -3,6 +3,7 @@ use std::io::Read;
 use errors::*;
 use lines::Line::*;
 use queries::*;
+use query::*;
 use peg;
 
 
@@ -28,12 +29,9 @@ impl<'a> Parse for &'a String {
 
 impl<'a, P: Parse> Parse for (&'a str, P) {
     fn parse(source: (&'a str, P)) -> Result<Queries> {
-        let Queries { queries, indexes, .. } = Parse::parse(source.1)?;
-        Ok(Queries {
-            info: Some(source.0.into()),
-            indexes: indexes,
-            queries: queries,
-        })
+        let noinfo = Parse::parse(source.1)?;
+        let withinfo = Queries::new(Some(source.0.into()), noinfo.iter());
+        Ok(withinfo)
     }
 }
 
@@ -85,7 +83,9 @@ impl<'a> Parse for &'a str {
             }
         }
 
-        Ok(Queries::new(queries))
+        let queries: Queries = queries.iter().collect();
+
+        Ok(queries)
     }
 }
 

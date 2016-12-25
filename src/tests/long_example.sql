@@ -1,4 +1,4 @@
---- An example SQL file using various odds-and-ends of Postgres.
+--- An example SQL file using various odds-and-ends of SQL syntax.
 --- It includes comments, decorative whitespace and a variety of queries
 --- and statements.
 

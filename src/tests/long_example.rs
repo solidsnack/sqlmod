@@ -5,7 +5,7 @@ use parser;
 
 #[test]
 fn it_works() {
-    let sample = include_str!("pg_examples.sql");
+    let sample = include_str!("long_example.sql");
     let parsed = parser::parse(sample);
     let keys: HashSet<&str> = vec!["as_interval",
                                    "as_timestamp",

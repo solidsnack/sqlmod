@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-pub mod pg_examples;
+pub mod attributes;
+pub mod long_example;
 pub mod single_query;
 
 use parser;

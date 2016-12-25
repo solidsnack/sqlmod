@@ -14,7 +14,9 @@ fn it_works() {
         vec![ANNO_RO, QUERY].join("\n"),
     ];
     for sample in samples {
+        println!("sample: {:?}", sample);
         let parsed = parser::parse(&sample).unwrap();
+        println!("parsed: {:?}", parsed);
         assert!(parsed["now"].name() == "now");
         assert!(parsed["now"].text() == QUERY);
     }
@@ -23,6 +25,7 @@ fn it_works() {
 
 #[test]
 fn whitespace() {
+    let anno_with_with_trailing_whitespace = vec![ANNO, "  "].join("");
     let samples = vec![
         vec![ANNO, QUERY].join("\n"),
         vec!["", ANNO, QUERY].join("\n"),
@@ -31,6 +34,7 @@ fn whitespace() {
         vec![ANNO, QUERY, ""].join("\n"),
         vec![ANNO, QUERY, "  "].join("\n"),
         vec![ANNO, QUERY, "  ", "\t"].join("\n"),
+        vec![&anno_with_with_trailing_whitespace as &str, QUERY].join("\n"),
     ];
     for sample in samples {
         let parsed = parser::parse(&sample).unwrap();
