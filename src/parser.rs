@@ -17,7 +17,7 @@ pub trait Parse {
 
 impl<'a, R: Read> Parse for &'a mut R {
     fn parse(text: &mut R) -> Result<Queries> {
-        read(text).map(|ref s| Parse::parse(s))?
+        try!(read(text).map(|ref s| Parse::parse(s)))
     }
 }
 
@@ -29,7 +29,7 @@ impl<'a> Parse for &'a String {
 
 impl<'a, P: Parse> Parse for (&'a str, P) {
     fn parse(source: (&'a str, P)) -> Result<Queries> {
-        let noinfo = Parse::parse(source.1)?;
+        let noinfo = try!(Parse::parse(source.1));
         let withinfo = Queries::new(Some(source.0.into()), noinfo.iter());
         Ok(withinfo)
     }
@@ -45,7 +45,7 @@ impl<'a> Parse for &'a str {
         let mut start = 0;         // Byte offset: begin-of-declaration-pointer
         let mut end = 0;             // Byte offset: end-of-declaration-pointer
 
-        for line in peg::lines(&text)? {
+        for line in try!(peg::lines(&text)) {
             lineno += 1;
             match line {          // Consume declaration information if present
                 Declaration(_, ref signature) => {
@@ -92,7 +92,7 @@ impl<'a> Parse for &'a str {
 
 fn read<R: Read>(source: &mut R) -> Result<String> {
     let mut s: String = String::default();
-    source.read_to_string(&mut s)?;
+    try!(source.read_to_string(&mut s));
     Ok(s)
 }
 

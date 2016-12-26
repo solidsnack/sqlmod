@@ -5,7 +5,8 @@ extern crate error_chain;
 extern crate libc;
 extern crate linked_hash_map;
 
-// pub mod c;
+pub mod c;
+pub use c::*;
 pub mod errors;
 pub mod lines;
 pub mod parser;
