@@ -55,16 +55,17 @@ type qselect_query_t = Query;
 // Interface for Queries object ///////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_parse(text: qselect_str_t)
-                                       -> *mut qselect_queries_t {
+pub unsafe extern "C" fn qselect_queries_parse(text: qselect_str_t)
+                                               -> *mut qselect_queries_t {
     // NB: Gives the Queries object to the outside -- caller must free.
     to_ptr(parser::parse(&text.to_str_lossy() as &str).ok())
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_lookup(queries: *const qselect_queries_t,
-                                        name: qselect_str_t)
-                                        -> *const qselect_query_t {
+pub unsafe extern "C" fn qselect_queries_get_query_by_name
+    (queries: *const qselect_queries_t,
+     name: qselect_str_t)
+     -> *const qselect_query_t {
     let key = name.to_str_lossy();
     if let Some(query) = queries.as_ref().and_then(|q| q.get(&key)) {
         query as *const _                          // Share memory with outside
@@ -74,13 +75,14 @@ pub unsafe extern "C" fn qselect_lookup(queries: *const qselect_queries_t,
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_query(queries: *const qselect_queries_t,
-                                       i: libc::size_t)
-                                       -> *const qselect_query_t {
-    let i = i as usize;
+pub unsafe extern "C" fn qselect_queries_get_query_by_index
+    (queries: *const qselect_queries_t,
+     index: libc::size_t)
+     -> *const qselect_query_t {
+    let index = index as usize;
     if let Some(queries) = queries.as_ref() {
-        for (index, query) in queries.iter().enumerate() {
-            if i == index {
+        for (i, query) in queries.iter().enumerate() {
+            if index == i {
                 return query as *const _;
             }
         }
@@ -89,8 +91,9 @@ pub unsafe extern "C" fn qselect_query(queries: *const qselect_queries_t,
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_queries(queries: *const qselect_queries_t)
-                                         -> libc::size_t {
+pub unsafe extern "C" fn
+    qselect_queries_num_queries(queries: *const qselect_queries_t)
+                                -> libc::size_t {
     if let Some(queries) = queries.as_ref() {
         queries.len() as libc::size_t
     } else {
@@ -99,7 +102,8 @@ pub unsafe extern "C" fn qselect_queries(queries: *const qselect_queries_t)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_free(queries: *mut qselect_queries_t) {
+pub unsafe extern "C" fn
+    qselect_queries_free(queries: *mut qselect_queries_t) {
     free(queries);
 }
 
@@ -107,15 +111,15 @@ pub unsafe extern "C" fn qselect_free(queries: *mut qselect_queries_t) {
 // Interface for Query object /////////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_name(query: *const qselect_query_t)
-                                      -> qselect_str_t {
+pub unsafe extern "C" fn qselect_query_get_name(query: *const qselect_query_t)
+                                                -> qselect_str_t {
     query.as_ref()
          .map(|query| qselect_str_t::new(&query.signature.name))
          .unwrap_or_default()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_text(query: *const qselect_query_t)
+pub unsafe extern "C" fn qselect_query_get_text(query: *const qselect_query_t)
                                       -> qselect_str_t {
     query.as_ref()
          .map(|query| qselect_str_t::new(&query.text))
@@ -123,8 +127,9 @@ pub unsafe extern "C" fn qselect_text(query: *const qselect_query_t)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_attributes(query: *const qselect_query_t)
-                                            -> libc::size_t {
+pub unsafe extern "C" fn
+    qselect_query_num_attributes(query: *const qselect_query_t)
+                                 -> libc::size_t {
     if let Some(query) = query.as_ref() {
         query.signature.attributes.len() as libc::size_t
     } else {
@@ -133,12 +138,13 @@ pub unsafe extern "C" fn qselect_attributes(query: *const qselect_query_t)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn qselect_attribute(query: *const qselect_query_t,
-                                           i: libc::size_t)
-                                           -> qselect_str_t {
-    let i = i as usize;
+pub unsafe extern "C" fn qselect_query_get_attribute_by_index
+    (query: *const qselect_query_t,
+     index: libc::size_t)
+     -> qselect_str_t {
+    let index = index as usize;
     query.as_ref()
-         .and_then(|query| query.signature.attributes.get(i))
+         .and_then(|query| query.signature.attributes.get(index))
          .map(|s| qselect_str_t::new(&s))
          .unwrap_or_default()
 }
