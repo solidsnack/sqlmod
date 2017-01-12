@@ -3,7 +3,7 @@ require "ffi"
 module QuerySelector
 
 def self.parse(text)
-  # Ruby hashes since 1.9 preserve insertion order so we can don't need a
+  # Ruby hashes since 1.9 preserve insertion order so we don't need a
   # special data structure.
   result = {}
   bridged = Bridge::Queries::parse(text)
@@ -48,12 +48,24 @@ class Query
 end
 
 
+def self.library_paths
+  d = File.dirname(__FILE__)
+  f = File.basename(__FILE__, ".*")
+  directories = [File.join(d, f), "target/release", "target/debug"]
+  suffixes = case RbConfig::CONFIG["DLEXT"]
+             when "bundle" then ["dylib", RbConfig::CONFIG["DLEXT"]]
+             else [RbConfig::CONFIG["DLEXT"]]
+             end
+  directories.map do |d|
+    suffixes.map{|sfx| File.join(d, "lib#{f}.#{sfx}") }
+  end.flatten
+end
+
+
 module Bridge
   extend FFI::Library
-  ffi_lib ["libqselect",
-           "target/release/libqselect.dylib",
-           "target/debug/libqselect.dylib"]
- 
+  ffi_lib QuerySelector.library_paths
+
   class Queries < FFI::AutoPointer
     def self.release(ptr)
       Bridge::queries_free(ptr)
