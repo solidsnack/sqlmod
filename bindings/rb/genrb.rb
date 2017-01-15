@@ -15,10 +15,10 @@ parsed = decls.map do |d|
 end
 
 def map_types(ty)
-  types = {"qselect_str_t" => "StrHandle.val",
-           "qselect_queries_t const*" => "Queries",
-           "qselect_queries_t*" => "Queries",
-           "qselect_query_t const*" => "Query"}
+  types = {"query_selector_str_t" => "StrHandle.val",
+           "query_selector_queries_t const*" => "Queries",
+           "query_selector_queries_t*" => "Queries",
+           "query_selector_query_t const*" => "Query"}
   case
   when types[ty] then types[ty]
   when ty.include?("*") then ":pointer"
@@ -29,7 +29,7 @@ end
 in_ffi_form = parsed.map do |name, args, return_type|
   args = args.map{|s| map_types(s)}
   ret = map_types(return_type)
-  new_name = name.sub(/^qselect_/, "").to_sym
+  new_name = name.sub(/^query_selector_/, "").to_sym
   [":#{new_name}", ":#{name}", "[#{args.join(", ")}]", ret]
 end
 

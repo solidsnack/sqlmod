@@ -7,4 +7,4 @@ test:
 	cargo test
 
 clean:
-	cargo clean -p qselect
+	cargo clean -p query-selector
