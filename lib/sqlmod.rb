@@ -1,6 +1,6 @@
 require "ffi"
 
-module QuerySelector
+module SQLMod
 
 def self.parse(text)
   # Ruby hashes since 1.9 preserve insertion order so we don't need a
@@ -64,7 +64,7 @@ end
 
 module Bridge
   extend FFI::Library
-  ffi_lib QuerySelector.library_paths
+  ffi_lib SQLMod.library_paths
 
   class Queries < FFI::AutoPointer
     def self.release(ptr)
@@ -102,8 +102,8 @@ module Bridge
     def text
       Bridge::query_get_text(self).to_s
     end
- 
-    def attributes 
+
+    def attributes
       num = Bridge::query_num_attributes(self)
       (0...num).map{|i| Bridge::query_get_attribute_by_index(self, i).to_s}
     end
@@ -137,36 +137,36 @@ module Bridge
   end
 
   attach_function :queries_parse,
-                  :query_selector_queries_parse,
+                  :sqlmod_queries_parse,
                   [StrHandle.val], Queries
   attach_function :queries_get_query_by_name,
-                  :query_selector_queries_get_query_by_name,
+                  :sqlmod_queries_get_query_by_name,
                   [Queries, StrHandle.val], Query
   attach_function :queries_get_query_by_index,
-                  :query_selector_queries_get_query_by_index,
+                  :sqlmod_queries_get_query_by_index,
                   [Queries, :size_t], Query
   attach_function :queries_num_queries,
-                  :query_selector_queries_num_queries,
+                  :sqlmod_queries_num_queries,
                   [Queries], :size_t
   attach_function :queries_free,
-                  :query_selector_queries_free,
+                  :sqlmod_queries_free,
                   [Queries], :void
 
   attach_function :query_get_name,
-                  :query_selector_query_get_name,
+                  :sqlmod_query_get_name,
                   [Query], StrHandle.val
   attach_function :query_get_text,
-                  :query_selector_query_get_text,
+                  :sqlmod_query_get_text,
                   [Query], StrHandle.val
   attach_function :query_num_attributes,
-                  :query_selector_query_num_attributes,
+                  :sqlmod_query_num_attributes,
                   [Query], :size_t
   attach_function :query_get_attribute_by_index,
-                  :query_selector_query_get_attribute_by_index,
+                  :sqlmod_query_get_attribute_by_index,
                   [Query, :size_t], StrHandle.val
 
   attach_function :str,
-                  :query_selector_str,
+                  :sqlmod_str,
                   [:pointer, :size_t], StrHandle.val
 
 end

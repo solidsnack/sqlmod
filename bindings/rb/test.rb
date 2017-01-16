@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 require "pp"
 
-load "bindings/queryselector.rb"
+$LOAD_PATH.unshift "lib/"
+
+require "sqlmod"
+
 
 queries = <<-SQL
 --@ now ro
@@ -11,6 +14,6 @@ SELECT now();
 SELECT 'today'::timestamptz;
 SQL
 
-qs = QuerySelector::parse(queries)
+qs = SQLMod::parse(queries)
 
 pp qs

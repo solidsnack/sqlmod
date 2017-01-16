@@ -1,12 +1,12 @@
 # coding: utf-8
 Gem::Specification.new do |spec|
-  spec.name           = "query_selector"
+  spec.name           = "sqlmod"
   spec.version        = "0.1.0"
   spec.authors        = ["Jason Dusek"]
   spec.email          = ["jason.dusek@gmail.com"]
   spec.summary        = "Organize app queries in an annotated SQL file."
   spec.description    = "Organize app queries in an annotated SQL file."
-  spec.homepage       = "https://gitlab.com/solidsnack/query-selector"
+  spec.homepage       = "https://gitlab.com/solidsnack/sqlmod"
   spec.license        = "MIT"
   spec.files          = `git ls-files -z`.split("\x0")
   spec.executables    = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }

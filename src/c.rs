@@ -40,33 +40,32 @@ use query::*;
 #[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
-pub struct query_selector_str_t {
+pub struct sqlmod_str_t {
     ptr: *const libc::c_char,
     len: libc::size_t,
 }
 
 #[allow(non_camel_case_types)]
-type query_selector_queries_t = Queries;
+type sqlmod_queries_t = Queries;
 
 #[allow(non_camel_case_types)]
-type query_selector_query_t = Query;
+type sqlmod_query_t = Query;
 
 
 // Interface for Queries object ///////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_queries_parse
-    (text: query_selector_str_t)
-     -> *mut query_selector_queries_t {
+pub unsafe extern "C" fn sqlmod_queries_parse(text: sqlmod_str_t)
+                                              -> *mut sqlmod_queries_t {
     // NB: Gives the Queries object to the outside -- caller must free.
     to_ptr(parser::parse(&text.to_str_lossy() as &str).ok())
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_queries_get_query_by_name
-    (queries: *const query_selector_queries_t,
-     name: query_selector_str_t)
-     -> *const query_selector_query_t {
+pub unsafe extern "C" fn sqlmod_queries_get_query_by_name
+    (queries: *const sqlmod_queries_t,
+     name: sqlmod_str_t)
+     -> *const sqlmod_query_t {
     let key = name.to_str_lossy();
     if let Some(query) = queries.as_ref().and_then(|q| q.get(&key)) {
         query as *const _                          // Share memory with outside
@@ -76,10 +75,10 @@ pub unsafe extern "C" fn query_selector_queries_get_query_by_name
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_queries_get_query_by_index
-    (queries: *const query_selector_queries_t,
+pub unsafe extern "C" fn sqlmod_queries_get_query_by_index
+    (queries: *const sqlmod_queries_t,
      index: libc::size_t)
-     -> *const query_selector_query_t {
+     -> *const sqlmod_query_t {
     let index = index as usize;
     if let Some(queries) = queries.as_ref() {
         for (i, query) in queries.iter().enumerate() {
@@ -92,8 +91,8 @@ pub unsafe extern "C" fn query_selector_queries_get_query_by_index
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_queries_num_queries
-    (queries: *const query_selector_queries_t)
+pub unsafe extern "C" fn sqlmod_queries_num_queries
+    (queries: *const sqlmod_queries_t)
      -> libc::size_t {
     if let Some(queries) = queries.as_ref() {
         queries.len() as libc::size_t
@@ -103,8 +102,7 @@ pub unsafe extern "C" fn query_selector_queries_num_queries
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn
-    query_selector_queries_free(queries: *mut query_selector_queries_t) {
+pub unsafe extern "C" fn sqlmod_queries_free(queries: *mut sqlmod_queries_t) {
     free(queries);
 }
 
@@ -112,26 +110,24 @@ pub unsafe extern "C" fn
 // Interface for Query object /////////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_query_get_name
-    (query: *const query_selector_query_t)
-     -> query_selector_str_t {
+pub unsafe extern "C" fn sqlmod_query_get_name(query: *const sqlmod_query_t)
+                                               -> sqlmod_str_t {
     query.as_ref()
-         .map(|query| query_selector_str_t::new(&query.signature.name))
+         .map(|query| sqlmod_str_t::new(&query.signature.name))
          .unwrap_or_default()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_query_get_text
-    (query: *const query_selector_query_t)
-     -> query_selector_str_t {
+pub unsafe extern "C" fn sqlmod_query_get_text(query: *const sqlmod_query_t)
+                                               -> sqlmod_str_t {
     query.as_ref()
-         .map(|query| query_selector_str_t::new(&query.text))
+         .map(|query| sqlmod_str_t::new(&query.text))
          .unwrap_or_default()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_query_num_attributes
-    (query: *const query_selector_query_t)
+pub unsafe extern "C" fn sqlmod_query_num_attributes
+    (query: *const sqlmod_query_t)
      -> libc::size_t {
     if let Some(query) = query.as_ref() {
         query.signature.attributes.len() as libc::size_t
@@ -141,14 +137,14 @@ pub unsafe extern "C" fn query_selector_query_num_attributes
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_query_get_attribute_by_index
-    (query: *const query_selector_query_t,
+pub unsafe extern "C" fn sqlmod_query_get_attribute_by_index
+    (query: *const sqlmod_query_t,
      index: libc::size_t)
-     -> query_selector_str_t {
+     -> sqlmod_str_t {
     let index = index as usize;
     query.as_ref()
          .and_then(|query| query.signature.attributes.get(index))
-         .map(|s| query_selector_str_t::new(&s))
+         .map(|s| sqlmod_str_t::new(&s))
          .unwrap_or_default()
 }
 
@@ -173,15 +169,15 @@ unsafe fn free<T>(ptr: *mut T) {
 // String utilities ///////////////////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn query_selector_str(ptr: *const libc::c_char,
-                                            len: libc::size_t)
-                                            -> query_selector_str_t {
-    query_selector_str_t { ptr: ptr, len: len }
+pub unsafe extern "C" fn sqlmod_str(ptr: *const libc::c_char,
+                                    len: libc::size_t)
+                                    -> sqlmod_str_t {
+    sqlmod_str_t { ptr: ptr, len: len }
 }
 
-impl query_selector_str_t {
-    pub fn new(s: &str) -> query_selector_str_t {
-        query_selector_str_t {
+impl sqlmod_str_t {
+    pub fn new(s: &str) -> sqlmod_str_t {
+        sqlmod_str_t {
             ptr: s.as_ptr() as *const libc::c_char,
             len: s.len(),
         }
@@ -189,13 +185,12 @@ impl query_selector_str_t {
 
     pub fn is_null(&self) -> bool { self.ptr.is_null() }
 
-    pub unsafe fn from_cstr(s: *const libc::c_char)
-                            -> Result<query_selector_str_t> {
+    pub unsafe fn from_cstr(s: *const libc::c_char) -> Result<sqlmod_str_t> {
         let n = try!(CStr::from_ptr(s)
                     .to_str()
                     .chain_err(|| "UTF8 error in foreign string."))
                     .len();
-        Ok(query_selector_str_t { ptr: s, len: n })
+        Ok(sqlmod_str_t { ptr: s, len: n })
     }
 
     pub unsafe fn to_slice(&self) -> &[u8] {
@@ -212,8 +207,8 @@ impl query_selector_str_t {
     }
 }
 
-impl Default for query_selector_str_t {
-    fn default() -> query_selector_str_t {
-        query_selector_str_t { ptr: std::ptr::null(), len: 0 }
+impl Default for sqlmod_str_t {
+    fn default() -> sqlmod_str_t {
+        sqlmod_str_t { ptr: std::ptr::null(), len: 0 }
     }
 }

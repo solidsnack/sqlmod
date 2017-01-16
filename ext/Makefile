@@ -1,8 +1,8 @@
 .PHONY: rs
 rs:
 	cd ../ && cargo build --release
-	mkdir -p ../lib/query_selector
-	cp ../target/release/lib*.* ../lib/query_selector/
+	mkdir -p ../lib/sqlmod
+	cp ../target/release/lib*.* ../lib/sqlmod/
 
 .PHONY: install
 install: rs

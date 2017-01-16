@@ -7,13 +7,11 @@ mod codegen {
 
     pub fn header() {
         Cheddar::new().expect("Could not read manifest!")
-            .insert_code("typedef struct query_selector_queries_t ")
-            .insert_code("query_selector_queries_t;")
+            .insert_code("typedef struct sqlmod_queries_t sqlmod_queries_t;")
             .insert_code("\n")
-            .insert_code("typedef struct query_selector_query_t ")
-            .insert_code("query_selector_query_t;")
+            .insert_code("typedef struct sqlmod_query_t sqlmod_query_t;")
             .module("c").expect("Malformed module path!")
-            .run_build("target/include/qselect.h");
+            .run_build("target/include/sqlmod.h");
     }
 
     pub fn peg() {
