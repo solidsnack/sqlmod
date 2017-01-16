@@ -1,5 +1,4 @@
 use lines::*;
-use queries::*;
 use query::*;
 
 
@@ -11,17 +10,26 @@ inline -> Line<'input>
     = declaration / broken_declaration / comment / something
 
 declaration -> Line<'input>
-    = "--@" [ \t]+ signature:signature [ \t]*
-      { Declaration(Section(start_pos, pos, match_str), signature) }
+    = start:#position
+      s:&($(decl))                  // NB: Match twice on decl, once for string
+      signature:decl                //     and once for signature.
+      end:#position
+      { Declaration(Section(start, end, s), signature) }
+
+decl -> Signature
+    = "--@" [ \t]+ signature:signature [ \t]* { signature }
 
 broken_declaration -> Line<'input>
-    = "--@" [^\r\n]* { BrokenDeclaration(Section(start_pos, pos, match_str)) }
+    = start:#position s:$("--@" [^\r\n]*) end:#position
+      { BrokenDeclaration(Section(start, end, s)) }
 
 comment -> Line<'input>
-    = "--" [^\r\n]* { Comment(Section(start_pos, pos, match_str)) }
+    = start:#position s:$("--" [^\r\n]*) end:#position
+      { Comment(Section(start, end, s)) }
 
 something -> Line<'input>
-    = [^\r\n]* { Text(Section(start_pos, pos, match_str)) }
+    = start:#position s:$([^\r\n]*) end:#position
+      { Text(Section(start, end, s)) }
 
 
 signature -> Signature
@@ -36,15 +44,15 @@ signature -> Signature
 
 /// Simple names.
 name -> &'input str
-    = [a-z] [a-zA-Z0-9_]* { match_str }
+    = s:$([a-z] [a-zA-Z0-9_]*) { s }
 
 /// Annotations are any trailing words or quoted groupings thereof.
 annotation -> &'input str
-    = (plain_word / plain_word balanced_parens / balanced_parens / quoted)
-      { match_str }
+    = s:$(plain_word / plain_word balanced_parens / balanced_parens / quoted)
+      { s }
 
 parenthesized -> &'input str
-    = balanced_parens { match_str }
+    = s:$(balanced_parens) { s }
 
 /// No quotes, no spaces, no parentheses.
 plain_word = [^ \t"()\r\n]+

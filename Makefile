@@ -7,7 +7,4 @@ test:
 	cargo test
 
 clean:
-	cargo clean -p qselect
-
-src/peg.rs: parser.rustpeg
-	peg < $^ > $@
+	cargo clean -p query-selector
