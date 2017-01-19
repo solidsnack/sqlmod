@@ -1,8 +1,15 @@
 target
 Cargo.lock
-
 *.rs.bk
 
 .vscode/
 
 tmp/
+
+pkg/
+
+.tox/
+.eggs/
+*.egg-info/
+dist/
+*.pyc
